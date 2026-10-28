@@ -233,6 +233,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
   transition:.25s;z-index:90;max-width:86vw;
 }
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.ok{border-left-color:var(--gold)}
 @media (max-width:700px){.toast{top:64px;font-size:11.5px;padding:8px 13px;max-width:92vw}}
 
 .overlay{
@@ -340,9 +341,10 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
 
   let S = null, busy = false, cardNode = null, chartSeq = 0, toastTimer = null;
 
-  function toast(msg) {
+  function toast(msg, kind) {
     const t = el("toast");
     t.textContent = msg;
+    t.classList.toggle("ok", kind === "ok");
     t.classList.add("show");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
@@ -617,7 +619,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
       const f = forecast(effMkt());
       SKUS.forEach(s => { el("d_order_" + s.id).value = Math.round(f[s.id] * 1.05 / 10) * 10; });
       updateCard();
-      toast("已按预测需求备货。");
+      toast("已按预测需求备货。", "ok");
     });
 
     el("d_last").addEventListener("click", () => {
@@ -630,7 +632,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
       if (amt <= 0) { toast("授信已用满（上限 " + money(LOAN_LIMIT) + "）。"); return; }
       S.debt += amt; S.cash += amt;
       renderHud(); updateCard();
-      toast("借入 " + money(amt) + "，每月利息 " + money(S.debt * LOAN_RATE) + "。");
+      toast("借入 " + money(amt) + "，每月利息 " + money(S.debt * LOAN_RATE) + "。", "ok");
     });
 
     el("d_repay").addEventListener("click", () => {
@@ -639,7 +641,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
       if (amt > S.cash) { toast("现金不够，账上只有 " + money(S.cash) + "。"); return; }
       S.debt -= amt; S.cash -= amt;
       renderHud(); updateCard();
-      toast("还款 " + money(amt) + "，剩余负债 " + money(S.debt) + "。");
+      toast("还款 " + money(amt) + "，剩余负债 " + money(S.debt) + "。", "ok");
     });
 
     el("d_up").addEventListener("click", () => {
@@ -649,7 +651,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
       S.cash -= cost; S.totals.capex += cost; S.level += 1;
       renderHud(); updateCard();
       setShop(S.level);
-      toast("门店 LV." + S.level + " · " + SHOP_NAMES[S.level] + "：客流 +" + pct(UP_DEMAND) + "，产能 +" + CAP_PER_LEVEL + "，月租 +" + money(RENT_PER_LVL) + "。");
+      toast("门店 LV." + S.level + " · " + SHOP_NAMES[S.level] + "：客流 +" + pct(UP_DEMAND) + "，产能 +" + CAP_PER_LEVEL + "，月租 +" + money(RENT_PER_LVL) + "。", "ok");
       const shopMsg = push("zhen",
         '<img class="scene" src="assets/shop' + S.level + '.webp" alt="门店 LV.' + S.level + '">' +
         '<div class="ev-r">店面翻新好了 —— <b>' + SHOP_NAMES[S.level] + '</b>。客流 <b>+' + pct(UP_DEMAND) +
