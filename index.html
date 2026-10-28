@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="description" content="生意人 · 经营模拟器 —— 24 个月，从一家小店到一家公司。用真实的价格弹性、产能约束、库存周转与现金流逻辑，训练你的商业判断。"/>
+<title>生意人 · 经营模拟器</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080a0e; --panel:#101419; --panel2:#151a21; --line:#222a34; --line2:#2d3745;
+  --txt:#e3e9f0; --dim:#8a97a8; --dim2:#5e6b7c;
+  --gold:#f3b544; --gold2:#ffd479; --cyan:#48c8ef; --red:#f2565c; --grn:#2ecf8f;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1100px 520px at 12% -8%, #14202c 0%, transparent 62%),
+    radial-gradient(900px 480px at 92% 4%, #1a1620 0%, transparent 58%),
+    var(--bg);
+  color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:14px; line-height:1.5; min-height:100%;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1360px;margin:0 auto;padding:22px 20px 60px}
+
+/* ---------- HUD ---------- */
+.hud{
+  display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;
+  padding:16px 20px;border:1px solid var(--line);border-radius:14px;
+  background:linear-gradient(180deg,rgba(24,31,40,.92),rgba(14,18,23,.92));
+  box-shadow:0 16px 40px -24px #000;margin-bottom:16px;
+}
+.brand{display:flex;gap:12px;align-items:center;min-width:260px}
+.logo{
+  width:42px;height:42px;border-radius:11px;display:grid;place-items:center;
+  background:linear-gradient(145deg,var(--gold),#c2802a);color:#151108;font-weight:800;font-size:20px;
+  box-shadow:0 0 0 1px #ffd47940, 0 8px 22px -8px #f3b54470;
+}
+.brand h1{font-size:17px;letter-spacing:.5px;font-weight:700}
+.brand p{font-size:10.5px;color:var(--dim2);letter-spacing:1.1px;font-family:var(--mono);margin-top:1px}
+.hudstats{display:flex;flex-wrap:wrap;gap:6px}
+.hs{
+  padding:7px 13px;border-radius:10px;background:#0b0f14;border:1px solid var(--line);
+  display:flex;flex-direction:column;gap:1px;min-width:88px;
+}
+.hs span{font-size:10px;color:var(--dim2);letter-spacing:.6px}
+.hs b{font-family:var(--mono);font-size:14.5px;font-weight:600;letter-spacing:-.2px}
+.hs b.gold{color:var(--gold)} .hs b.cyan{color:var(--cyan)} .hs b.red{color:var(--red)}
+.hs b.grn{color:var(--grn)}
+
+/* ---------- grid ---------- */
+.grid{display:grid;grid-template-columns:1.08fr .92fr;gap:16px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+.panel{
+  border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#12171d,#0d1116);
+  padding:16px 18px 18px;box-shadow:0 20px 50px -34px #000;
+}
+.phead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+.phead h2{font-size:14px;font-weight:700;letter-spacing:.6px}
+.phead h2::before{content:"";display:inline-block;width:3px;height:13px;background:var(--gold);border-radius:2px;margin-right:8px;vertical-align:-2px}
+.hint{font-size:11px;color:var(--dim);font-family:var(--mono)}
+
+/* ---------- 决策表 ---------- */
+table.dec{width:100%;border-collapse:collapse;font-size:12.5px}
+table.dec th{
+  font-size:10px;color:var(--dim2);font-weight:500;text-align:right;padding:0 0 7px;letter-spacing:.5px;
+  border-bottom:1px solid var(--line);
+}
+table.dec th:first-child{text-align:left}
+table.dec td{padding:9px 0;border-bottom:1px dashed #1a2027;text-align:right;font-family:var(--mono);font-size:12.5px}
+table.dec td:first-child{text-align:left;font-family:inherit}
+.pn{font-size:13px;font-weight:600}
+.ptag{font-size:9.5px;color:var(--dim2);letter-spacing:.4px;margin-top:1px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dim{color:var(--dim)}
+.gold{color:var(--gold)} .red{color:var(--red)} .cyan{color:var(--cyan)} .grn{color:var(--grn)}
+input.in{
+  width:74px;padding:6px 7px;border-radius:7px;border:1px solid var(--line2);background:#0a0e13;
+  color:var(--txt);font-family:var(--mono);font-size:12.5px;text-align:right;outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+input.in:focus{border-color:var(--gold);box-shadow:0 0 0 3px #f3b54420}
+input.in::-webkit-outer-spin-button,input.in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input.in[type=number]{-moz-appearance:textfield}
+
+/* ---------- 窄屏：决策表转卡片 ---------- */
+@media (max-width:560px){
+  table.dec thead{display:none}
+  table.dec,table.dec tbody{display:block;width:100%}
+  table.dec tr{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;
+    padding:13px 0 14px;border-bottom:1px solid var(--line);
+  }
+  table.dec tr:last-child{border-bottom:0}
+  table.dec td{
+    border:0;padding:0;text-align:left;display:flex;align-items:center;
+    justify-content:space-between;gap:8px;min-width:0;
+  }
+  table.dec td:first-child{grid-column:1/-1;display:block;margin-bottom:1px}
+  table.dec td.hide-sm{display:none}
+  table.dec td[data-label]::before{
+    content:attr(data-label);font-size:10.5px;color:var(--dim2);
+    font-weight:400;letter-spacing:.3px;flex:none;
+  }
+  input.in{width:86px;padding:7px 8px;font-size:13px}
+  button.ghost{padding:8px 11px}
+  .hud{gap:10px;padding:14px}
+  .brand p{font-size:9.5px;letter-spacing:.6px}
+}
+
+/* ---------- rows ---------- */
+.rows{margin-top:14px;display:flex;flex-direction:column;gap:11px}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.row>label{font-size:12px;color:var(--dim);width:66px;flex:none}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;flex:1;min-width:110px;height:4px;border-radius:3px;
+  background:linear-gradient(90deg,var(--gold) var(--p,0%),#232b35 var(--p,0%));outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--gold2);
+  border:2px solid #151108;box-shadow:0 0 0 1px #f3b54480,0 2px 8px #000;cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border:2px solid #151108;border-radius:50%;background:var(--gold2);cursor:pointer}
+.val{font-family:var(--mono);font-size:12.5px;min-width:76px;text-align:right;color:var(--gold)}
+.stepper{display:flex;align-items:center;gap:0;border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:#0a0e13}
+.stepper button{
+  width:30px;height:29px;background:transparent;border:0;color:var(--dim);font-size:16px;cursor:pointer;
+  line-height:1;transition:color .15s,background .15s;
+}
+.stepper button:hover{background:#1b222b;color:var(--gold)}
+.stepper b{width:34px;text-align:center;font-family:var(--mono);font-size:13px}
+
+/* ---------- 资本运作 ---------- */
+.sub{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.sub h3{font-size:11px;color:var(--dim2);letter-spacing:1px;margin-bottom:9px;font-weight:500}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+button.ghost{
+  padding:8px 13px;border-radius:8px;border:1px solid var(--line2);background:#131820;color:var(--txt);
+  font-size:12px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;
+}
+button.ghost:hover{border-color:var(--gold);color:var(--gold);background:#1a1f16}
+button.ghost:disabled{opacity:.35;cursor:not-allowed}
+button.ghost:disabled:hover{border-color:var(--line2);color:var(--txt);background:#131820}
+.loaninput{width:82px;padding:7px 8px;border-radius:8px;border:1px solid var(--line2);background:#0a0e13;color:var(--txt);font-family:var(--mono);font-size:12px;text-align:right;outline:none}
+.loaninput:focus{border-color:var(--gold)}
+
+button.primary{
+  width:100%;margin-top:16px;padding:13px;border:0;border-radius:11px;cursor:pointer;
+  background:linear-gradient(180deg,#ffc457,#e09b21);color:#181205;font-weight:800;font-size:14.5px;
+  letter-spacing:1.5px;font-family:inherit;box-shadow:0 10px 28px -12px #f3b54499;transition:.15s;
+}
+button.primary:hover{filter:brightness(1.07);transform:translateY(-1px)}
+button.primary:active{transform:translateY(0)}
+button.primary:disabled{filter:grayscale(.8);opacity:.5;cursor:not-allowed;transform:none}
+.calcline{margin-top:9px;font-size:11.5px;color:var(--dim);text-align:center;font-family:var(--mono)}
+.calcline b{color:var(--gold)}
+
+/* ---------- 战报 ---------- */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+@media (max-width:420px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.m{background:#0b0f14;border:1px solid var(--line);border-radius:9px;padding:8px 10px}
+.m span{display:block;font-size:10px;color:var(--dim2);letter-spacing:.3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m b{font-family:var(--mono);font-size:13.5px;font-weight:600;letter-spacing:-.2px}
+.chart{width:100%;height:124px;display:block;margin-top:12px}
+.chartcap{font-size:10px;color:var(--dim2);letter-spacing:.5px;margin-top:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.chartcap i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:2px}
+
+.coach{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.tip{
+  display:flex;gap:9px;padding:9px 11px;border-radius:9px;font-size:12px;line-height:1.55;
+  background:#0d1217;border:1px solid var(--line);border-left-width:3px;
+}
+.tip.warn{border-left-color:var(--red)}
+.tip.good{border-left-color:var(--grn)}
+.tip.info{border-left-color:var(--cyan)}
+.tip .ic{flex:none;font-size:12px;opacity:.9}
+.tip b{color:var(--gold2);font-weight:600}
+
+.empty{
+  padding:34px 12px;text-align:center;color:var(--dim2);font-size:12.5px;line-height:1.9;
+}
+.empty b{color:var(--dim);display:block;font-size:13px;margin-bottom:4px}
+
+/* ---------- 心法 ---------- */
+.lore{margin-top:16px}
+.lore summary{cursor:pointer;font-size:13px;font-weight:600;letter-spacing:.5px;list-style:none;display:flex;align-items:center;gap:8px}
+.lore summary::-webkit-details-marker{display:none}
+.lore summary::before{content:"▸";color:var(--gold);transition:.2s;display:inline-block}
+.lore[open] summary::before{transform:rotate(90deg)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:10px;margin-top:14px}
+.card{background:#0b0f14;border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+.card h4{font-size:12.5px;margin-bottom:6px;color:var(--gold2);font-weight:600}
+.card p{font-size:11.5px;color:var(--dim);line-height:1.7}
+.card p b{color:var(--txt);font-weight:600}
+.card .q{display:block;margin-top:7px;font-family:var(--mono);font-size:11px;color:var(--cyan);opacity:.85}
+
+/* ---------- toast ---------- */
+.toast{
+  position:fixed;left:50%;bottom:34px;transform:translate(-50%,14px);opacity:0;pointer-events:none;
+  background:#1d232b;border:1px solid var(--line2);border-left:3px solid var(--red);
+  padding:11px 18px;border-radius:9px;font-size:12.5px;box-shadow:0 18px 50px -18px #000;
+  transition:.25s;z-index:90;max-width:86vw;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- overlay/modal ---------- */
+.overlay{
+  position:fixed;inset:0;background:rgba(4,6,9,.82);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;padding:18px;z-index:100;
+}
+.overlay.show{display:flex}
+.modal{
+  width:100%;max-width:512px;max-height:86vh;overflow:auto;border-radius:16px;
+  background:linear-gradient(180deg,#141a21,#0e1217);border:1px solid var(--line2);
+  padding:22px;box-shadow:0 40px 90px -30px #000;animation:pop .22s ease-out;
+}
+@keyframes pop{from{opacity:0;transform:scale(.96) translateY(10px)}to{opacity:1;transform:none}}
+.modal .eyebrow{font-size:10px;letter-spacing:2px;color:var(--gold);font-family:var(--mono);margin-bottom:6px}
+.modal h3{font-size:17px;margin-bottom:9px;font-weight:700}
+.modal p.d{font-size:12.5px;color:var(--dim);line-height:1.75;margin-bottom:16px}
+.opt{
+  display:block;width:100%;text-align:left;padding:11px 14px;margin-bottom:8px;border-radius:9px;
+  border:1px solid var(--line2);background:#0c1116;color:var(--txt);font-size:12.5px;cursor:pointer;
+  font-family:inherit;line-height:1.5;transition:.15s;
+}
+.opt:hover{border-color:var(--gold);background:#151a17;transform:translateX(2px)}
+.opt small{display:block;color:var(--dim2);font-size:11px;margin-top:3px}
+
+/* 结算报告 */
+.grade{
+  text-align:center;padding:18px 0 14px;
+}
+.grade .g{font-size:26px;font-weight:800;letter-spacing:2px;
+  background:linear-gradient(180deg,#ffe1a1,#e2a02a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.grade .s{font-size:11px;color:var(--dim2);letter-spacing:2px;font-family:var(--mono);margin-top:4px}
+.big{font-family:var(--mono);font-size:30px;font-weight:700;text-align:center;margin:6px 0 2px;letter-spacing:-1px}
+.bigsub{text-align:center;font-size:11px;color:var(--dim2);margin-bottom:16px}
+.diag{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hud">
+    <div class="brand">
+      <div class="logo">生</div>
+      <div>
+        <h1>生意人 · 经营模拟器</h1>
+        <p>24 MONTHS · FROM SHOP TO COMPANY</p>
+      </div>
+    </div>
+    <div class="hudstats">
+      <div class="hs"><span>月份</span><b id="hMonth">1 / 18</b></div>
+      <div class="hs"><span>现金</span><b class="gold" id="hCash">¥0</b></div>
+      <div class="hs"><span>净资产</span><b class="cyan" id="hNet">¥0</b></div>
+      <div class="hs"><span>负债</span><b id="hDebt">¥0</b></div>
+      <div class="hs"><span>口碑</span><b id="hRep">60</b></div>
+    </div>
+  </header>
+
+  <main class="grid">
+    <!-- 决策 -->
+    <section class="panel">
+      <div class="phead">
+        <h2>本月决策</h2>
+        <span class="hint" id="capHint">产能 —</span>
+      </div>
+      <table class="dec">
+        <thead>
+          <tr>
+            <th>商品</th><th>进价</th><th>定价</th><th>订货量</th><th>预计需求</th><th>预计毛利</th>
+          </tr>
+        </thead>
+        <tbody id="decBody"></tbody>
+      </table>
+
+      <div class="rows">
+        <div class="row">
+          <label>营销投入</label>
+          <input type="range" id="mkt" min="0" max="24000" step="500" value="0"/>
+          <span class="val" id="mktVal">¥0</span>
+        </div>
+        <div class="row">
+          <label>员工人数</label>
+          <div class="stepper">
+            <button id="staffMinus" type="button">−</button>
+            <b id="staffVal">2</b>
+            <button id="staffPlus" type="button">+</button>
+          </div>
+          <span class="val dim" id="wageVal" style="color:var(--dim)">工资 ¥6,400</span>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>资本运作</h3>
+        <div class="acts">
+          <input class="loaninput" id="loanAmt" type="number" value="20000" step="5000" min="0"/>
+          <button class="ghost" id="btnBorrow" type="button">借款</button>
+          <button class="ghost" id="btnRepay" type="button">还款</button>
+          <button class="ghost" id="btnUpgrade" type="button">门店升级</button>
+        </div>
+      </div>
+
+      <button class="primary" id="btnSettle">结 算 本 月 &nbsp;→</button>
+      <div class="calcline" id="calcLine">本月预计支出 <b>¥0</b></div>
+    </section>
+
+    <!-- 战报 -->
+    <section class="panel">
+      <div class="phead">
+        <h2>经营战报</h2>
+        <span class="hint" id="repMonth">尚未结算</span>
+      </div>
+      <div id="reportBox">
+        <div class="empty">
+          <b>还没有数据</b>
+          在左侧定好价格与订货量，点击「结算本月」。<br/>
+          每一笔决策都会立刻反映在利润表与现金流量表上。
+        </div>
+      </div>
+      <canvas id="chart1" class="chart"></canvas>
+      <div class="chartcap">
+        <span><i style="background:#f3b544"></i>现金</span>
+        <span><i style="background:#48c8ef"></i>净资产</span>
+        <span style="margin-left:auto">净资产 = 现金 + 存货 − 负债</span>
+      </div>
+      <canvas id="chart2" class="chart" style="height:92px;margin-top:14px"></canvas>
+      <div class="chartcap"><span><i style="background:#2ecf8f"></i>月度净利润</span></div>
+      <div class="coach" id="coach"></div>
+    </section>
+  </main>
+
+  <details class="lore panel">
+    <summary>商业心法 · 这个模拟器背后的六条底层逻辑</summary>
+    <div class="cards">
+      <div class="card">
+        <h4>1. 价格弹性：降价换量，未必换钱</h4>
+        <p>每件商品的弹性系数不同：<b>基础款弹性 1.9</b>（敏感，降价能爆量），<b>旗舰款弹性 1.15</b>（不敏感，提价伤量小）。定价前先算：<b>提价 10% 会掉多少单？</b></p>
+        <span class="q">毛利 = (售价 − 进价) × 销量</span>
+      </div>
+      <div class="card">
+        <h4>2. 产能是天花板，营销买不到产能</h4>
+        <p>每人每月约 250 单产能。产能打满时再砸营销，<b>钱花了、单接不了</b>——边际投入的回报为零。先扩产能，再加营销。</p>
+        <span class="q">产能利用率 &gt; 95% → 该招人了</span>
+      </div>
+      <div class="card">
+        <h4>3. 营销的边际收益递减</h4>
+        <p>营销对需求是<b>对数关系</b>：投 3000 元可能带来 +25% 需求，投 12000 元只有 +50%。看 ROI，不看绝对增量。</p>
+        <span class="q">ROI &lt; 1 的营销支出 = 净亏损</span>
+      </div>
+      <div class="card">
+        <h4>4. 利润 ≠ 现金</h4>
+        <p>进货时现金立刻流出，但只有<b>卖掉的货</b>才计入成本（COGS）。压一堆库存，账面"有资产"，现金却断了。<b>企业死于现金流，不死于亏损。</b></p>
+        <span class="q">现金 ≠ 净资产，两者要分开看</span>
+      </div>
+      <div class="card">
+        <h4>5. 库存是负债，不是资产</h4>
+        <p>每月持仓成本约 1.5%，且缺货会直接砸口碑。库存周转天数越长，资金效率越低。最佳订货量≈<b>下月预计销量 × 1.0～1.2</b>。</p>
+        <span class="q">周转越快，同样的钱赚更多次</span>
+      </div>
+      <div class="card">
+        <h4>6. 杠杆放大收益，也放大死亡</h4>
+        <p>借款月息 1.2%。若资产回报率高于资金成本，借钱扩产是加速器；若低于，利息会吃掉全部利润。先确认<b>增量回报 &gt; 利息</b>。</p>
+        <span class="q">负债率 &gt; 60% 时，一次意外就出局</span>
+      </div>
+    </div>
+  </details>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= 常量 ================= */
+  const MAX_MONTH = 24;
+  const START_CASH = 60000;
+  const START_REP = 65;
+  const START_INV = { A: 120, B: 50, C: 12 };
+
+  const SKUS = [
+    { id: "A", name: "基础款", tag: "引流品 · 高敏感", cost: 16,  ref: 34,  base: 320, e: 1.9  },
+    { id: "B", name: "升级款", tag: "主力品 · 中敏感", cost: 44,  ref: 95,  base: 130, e: 1.7  },
+    { id: "C", name: "旗舰款", tag: "利润品 · 低敏感", cost: 104, ref: 260, base: 32,  e: 1.55 }
+  ];
+
+  const WAGE          = 3200;    // 每人每月工资
+  const CAP_PER_STAFF = 250;     // 每人每月产能（单）
+  const CAP_BASE      = 30;      // 老板自己 + 店铺基础产能
+  const CAP_PER_LEVEL = 80;      // 每级门店带来的产能
+  const BASE_RENT     = 2400;
+  const RENT_PER_LVL  = 400;
+  const HOLD_RATE     = 0.015;   // 库存月持有成本
+  const LOAN_RATE     = 0.012;   // 借款月息
+  const LOAN_LIMIT    = 150000;
+  const MKT_CARRY     = 0.4;     // 营销留存系数
+  const UP_COST       = [12000, 26000, 44000];  // 门店升级价
+  const UP_DEMAND     = 0.22;    // 每级带来的客流增幅
+  const MAX_LEVEL     = 3;
+
+  /* ================= 工具 ================= */
+  const el  = function (id) { return document.getElementById(id); };
+  const clamp = function (v, a, b) { return v < a ? a : (v > b ? b : v); };
+  const fmt = function (n) {
+    var s = Math.round(Math.abs(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return (n < 0 ? "-" : "") + s;
+  };
+  const money = function (n) { return "¥" + fmt(n); };
+  const pct = function (v, d) { return (v * 100).toFixed(d === undefined ? 1 : d) + "%"; };
+  const numVal = function (id, dflt) {
+    var v = parseFloat(el(id).value);
+    return (isFinite(v) && v >= 0) ? v : dflt;
+  };
+
+  var S = null;
+  var toastTimer = null;
+
+  function toast(msg) {
+    var t = el("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2600);
+  }
+
+  /* ================= 状态 ================= */
+  function newState() {
+    return {
+      month: 1,
+      cash: START_CASH,
+      debt: 0,
+      rep: START_REP,
+      inv: { A: START_INV.A, B: START_INV.B, C: START_INV.C },
+      prices: { A: 34, B: 95, C: 260 },
+      lastOrder: { A: 170, B: 70, C: 18 },
+      staff: 2,
+      level: 0,
+      mktStock: 0,
+      compIndex: 1.0,
+      wageMul: 1,
+      rentAdd: 0,
+      mods: [],
+      seen: {},
+      history: [{ month: 0, cash: START_CASH, net: START_CASH + START_INV.A * 16 + START_INV.B * 44 + START_INV.C * 104, profit: 0, revenue: 0 }],
+      lastReport: null,
+      gameOver: false,
+      awaitingEvent: false,
+      totals: { revenue: 0, profit: 0, cogs: 0, lost: 0, mkt: 0, units: 0, capex: 0, extra: 0 },
+      peakNet: START_CASH + START_INV.A * 16 + START_INV.B * 44 + START_INV.C * 104,
+      monthReports: []
+    };
+  }
+
+  /* ================= 派生量 ================= */
+  function invValue() {
+    var v = 0;
+    for (var i = 0; i < SKUS.length; i++) { v += S.inv[SKUS[i].id] * SKUS[i].cost; }
+    return v;
+  }
+  function netWorth() { return S.cash + invValue() - S.debt; }
+  function rentNow() { return BASE_RENT + S.level * RENT_PER_LVL + S.rentAdd; }
+  function wageNow() { return S.staff * WAGE * S.wageMul; }
+
+  function mulOf(target) {
+    var m = 1;
+    for (var i = 0; i < S.mods.length; i++) {
+      if (S.mods[i].target === target) { m *= S.mods[i].value; }
+    }
+    return m;
+  }
+  function addMod(target, value, months, label) {
+    S.mods.push({ target: target, value: value, left: months, label: label });
+  }
+
+  /* 营业外支出：不计入利润表，但真金白银地流出现金 */
+  function payExtra(amt) {
+    S.cash -= amt;
+    S.totals.extra += amt;
+  }
+
+  function capacity() {
+    return Math.round((S.staff * CAP_PER_STAFF + CAP_BASE + S.level * CAP_PER_LEVEL) * mulOf("capacity"));
+  }
+
+  /* ================= 需求模型 ================= */
+  function demandFor(sku, price, mktEff, noise) {
+    var nz = (noise === undefined) ? 1 : noise;
+    var refEff = sku.ref * S.compIndex;
+    var priceFactor = Math.pow(Math.max(price, 1) / refEff, -sku.e);
+    var mktFactor = 1 + 0.28 * Math.log2(1 + mktEff / 3000);
+    var repFactor = 0.6 + S.rep * 0.008;
+    var season = 1 + 0.2 * Math.sin((S.month - 4) * Math.PI / 6);
+    var storeMul = 1 + S.level * UP_DEMAND;
+    var evMul = mulOf("demand");
+    return Math.max(0, sku.base * priceFactor * mktFactor * repFactor * season * storeMul * evMul * nz);
+  }
+
+  /* ================= 渲染：HUD ================= */
+  function renderHud() {
+    el("hMonth").textContent = Math.min(S.month, MAX_MONTH) + " / " + MAX_MONTH;
+    el("hCash").textContent = money(S.cash);
+    el("hCash").className = S.cash < 0 ? "red" : "gold";
+    var nw = netWorth();
+    el("hNet").textContent = money(nw);
+    el("hNet").className = nw < START_CASH ? "red" : "cyan";
+    el("hDebt").textContent = money(S.debt);
+    el("hDebt").className = S.debt > 0 ? "red" : "";
+    el("hRep").textContent = Math.round(S.rep);
+    el("hRep").className = S.rep < 45 ? "red" : (S.rep > 78 ? "grn" : "");
+  }
+
+  /* ================= 渲染：决策表 ================= */
+  function renderDecisions() {
+    var body = el("decBody");
+    body.innerHTML = "";
+    for (var i = 0; i < SKUS.length; i++) {
+      var s = SKUS[i];
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td><div class="pn">' + s.name + '</div><div class="ptag">' + s.tag + '</div></td>' +
+        '<td class="num dim hide-sm">¥' + s.cost + '</td>' +
+        '<td data-label="定价"><input class="in" type="number" id="price_' + s.id + '" min="1" step="1" inputmode="numeric" value="' + S.prices[s.id] + '"></td>' +
+        '<td data-label="订货量"><input class="in" type="number" id="order_' + s.id + '" min="0" step="10" inputmode="numeric" value="' + (S.lastOrder[s.id] || 0) + '"></td>' +
+        '<td class="num" data-label="预计需求" id="pd_' + s.id + '">—</td>' +
+        '<td class="num" data-label="预计毛利" id="pg_' + s.id + '">—</td>';
+      body.appendChild(tr);
+    }
+
+    el("staffVal").textContent = S.staff;
+    var mkt = el("mkt");
+    mkt.value = 0;
+    updateSliderFill();
+    var upBtn = el("btnUpgrade");
+    if (S.level >= MAX_LEVEL) {
+      upBtn.textContent = "门店已满级";
+      upBtn.disabled = true;
+    } else {
+      upBtn.textContent = "门店升级 " + money(UP_COST[S.level]);
+      upBtn.disabled = false;
+    }
+    el("calcLine").innerHTML = "本月预计支出 <b>¥0</b>";
+    updatePreview();
+  }
+
+  function updateSliderFill() {
+    var mkt = el("mkt");
+    var p = (parseFloat(mkt.value) / parseFloat(mkt.max)) * 100;
+    mkt.style.setProperty("--p", p + "%");
+    el("mktVal").textContent = money(parseFloat(mkt.value));
+  }
+
+  /* ================= 预览 ================= */
+  function updatePreview() {
+    var mktInput = parseFloat(el("mkt").value) || 0;
+    var mktEff = S.mktStock * MKT_CARRY + mktInput * (1 - MKT_CARRY);
+    var cap = capacity();
+    var costMul = mulOf("cost");
+
+    var totalD = 0;
+    var ds = {};
+    for (var i = 0; i < SKUS.length; i++) {
+      var s = SKUS[i];
+      var p = numVal("price_" + s.id, s.ref);
+      ds[s.id] = demandFor(s, p, mktEff, 1);
+      totalD += ds[s.id];
+    }
+    var ratio = totalD > cap ? cap / totalD : 1;
+
+    var purchase = 0;
+    for (var j = 0; j < SKUS.length; j++) {
+      var sk = SKUS[j];
+      var price = numVal("price_" + sk.id, sk.ref);
+      var order = numVal("order_" + sk.id, 0);
+      purchase += order * sk.cost * costMul;
+
+      var served = ds[sk.id] * ratio;
+      var avail = S.inv[sk.id] + order;
+      var sellable = Math.min(served, avail);
+      var gp = sellable * (price - sk.cost * costMul);
+
+      var pdEl = el("pd_" + sk.id);
+      var pgEl = el("pg_" + sk.id);
+      if (pdEl) { pdEl.textContent = Math.round(ds[sk.id]); }
+      if (pgEl) {
+        pgEl.textContent = money(Math.round(gp));
+        pgEl.className = "num " + (gp >= 0 ? "gold" : "red");
+      }
+    }
+
+    el("staffVal").textContent = S.staff;
+    el("wageVal").textContent = "工资 " + money(wageNow());
+
+    var capUse = totalD > 0 ? Math.min(1, cap / totalD) : 1;
+    el("capHint").textContent = "产能 " + cap + " 单 / 月 · 需求 " + Math.round(totalD) +
+      (totalD > cap ? "（不足）" : "（充足）");
+    el("capHint").style.color = totalD > cap ? "var(--red)" : "var(--dim)";
+
+    var out = purchase + mktInput;
+    var shortage = out - S.cash;
+    if (shortage > 0.5) {
+      el("calcLine").innerHTML = '本月需支出 <b class="red">' + money(out) + '</b> · 现金缺口 <b class="red">' +
+        money(shortage) + '</b>　<span style="color:var(--dim)">减少订货或先借款</span>';
+    } else {
+      el("calcLine").innerHTML = "本月预计支出 <b>" + money(out) + "</b>（进货 " + money(purchase) +
+        " + 营销 " + money(mktInput) + "）　余 " + money(S.cash - out);
+    }
+
+    return { purchase: purchase, mktInput: mktInput, capUse: capUse };
+  }
+
+  /* ================= 结算 ================= */
+  function settle() {
+    if (S.gameOver || S.awaitingEvent) { return; }
+
+    var preview = updatePreview();
+    var purchase = preview.purchase;
+    var spend = preview.mktInput;
+
+    if (purchase + spend > S.cash + 0.5) {
+      toast("现金不足：进货 + 营销需 " + money(purchase + spend) + "，账上只有 " + money(S.cash) + "。请先借款或减少订货。");
+      return;
+    }
+
+    var costMul = mulOf("cost");
+    var mktEff = S.mktStock * MKT_CARRY + spend * (1 - MKT_CARRY);
+
+    /* 1. 进货：现金立即流出，计入存货 */
+    var orders = {};
+    for (var i = 0; i < SKUS.length; i++) {
+      var s0 = SKUS[i];
+      var q = Math.max(0, Math.round(numVal("order_" + s0.id, 0)));
+      orders[s0.id] = q;
+      S.inv[s0.id] += q;
+      S.lastOrder[s0.id] = q;
+      S.prices[s0.id] = numVal("price_" + s0.id, s0.ref);
+    }
+    S.cash -= purchase;
+    S.cash -= spend;
+    S.mktStock = mktEff;
+
+    /* 2. 需求预测 */
+    var cap = capacity();
+    var ds = {};
+    var totalD = 0;
+    for (var k = 0; k < SKUS.length; k++) {
+      var sk = SKUS[k];
+      var d = demandFor(sk, S.prices[sk.id], mktEff, 0.9 + Math.random() * 0.2);
+      ds[sk.id] = d;
+      totalD += d;
+    }
+
+    /* 3. 产能分配 + 库存约束 */
+    var ratio = totalD > cap ? cap / totalD : 1;
+    var revenue = 0, cogs = 0, sold = 0, lostCap = 0, lostStock = 0;
+    var detail = [];
+    for (var m = 0; m < SKUS.length; m++) {
+      var sku = SKUS[m];
+      var dm = ds[sku.id];
+      var served = dm * ratio;
+      var avail = S.inv[sku.id];
+      var sv = Math.min(served, avail);
+      S.inv[sku.id] -= sv;
+      var rv = sv * S.prices[sku.id];
+      revenue += rv;
+      cogs += sv * sku.cost * costMul;
+      sold += sv;
+      lostCap += (dm - served);
+      lostStock += Math.max(0, served - sv);
+      detail.push({ id: sku.id, name: sku.name, demand: dm, sold: sv, revenue: rv, price: S.prices[sku.id] });
+    }
+    S.cash += revenue;
+
+    /* 4. 经营费用 */
+    var rent = rentNow();
+    var wages = wageNow();
+    var iv = invValue();
+    var hold = iv * HOLD_RATE;
+    var interest = S.debt * LOAN_RATE;
+    var opex = rent + wages + hold + interest + spend;
+    S.cash -= (rent + wages + hold + interest);
+
+    var gross = revenue - cogs;
+    var profit = gross - opex;
+
+    /* 5. 口碑 */
+    var fillRate = totalD > 1e-6 ? sold / totalD : 1;
+    var repDelta;
+    if (fillRate >= 0.98) { repDelta = 1.5; }
+    else { repDelta = -(1 - fillRate) * 25; }
+    S.rep = clamp(S.rep + repDelta + (60 - S.rep) * 0.03, 5, 100);
+
+    /* 6. 现金断裂处理 */
+    var autoBorrow = 0;
+    var bankrupt = false;
+    if (S.cash < -0.5) {
+      var need = -S.cash;
+      var room = LOAN_LIMIT - S.debt;
+      if (room >= need) {
+        S.debt += need;
+        S.cash = 0;
+        autoBorrow = need;
+      } else {
+        S.cash += room;
+        S.debt = LOAN_LIMIT;
+        bankrupt = true;
+      }
+    }
+
+    /* 7. 竞品与趋势缓慢漂移 */
+    S.compIndex = clamp(S.compIndex + (Math.random() - 0.5) * 0.04, 0.86, 1.18);
+
+    /* 8. 记账 */
+    var mktFactor = 1 + 0.28 * Math.log2(1 + mktEff / 3000);
+    var incrGross = gross * (1 - 1 / mktFactor);
+    var mktRoi = spend > 0 ? (incrGross - spend) / spend : 0;
+
+    var rep = {
+      month: S.month,
+      revenue: revenue, cogs: cogs, gross: gross, opex: opex, profit: profit,
+      rent: rent, wages: wages, hold: hold, interest: interest, spend: spend,
+      cash: S.cash, debt: S.debt, inv: iv, net: netWorth(),
+      sold: sold, totalDemand: totalD, lostCap: lostCap, lostStock: lostStock,
+      fillRate: fillRate, capUse: cap / Math.max(totalD, 1),
+      grossMargin: revenue > 0 ? gross / revenue : 0,
+      aov: sold > 0 ? revenue / sold : 0,
+      mktEff: mktEff, mktFactor: mktFactor, mktRoi: mktRoi,
+      autoBorrow: autoBorrow, bankrupt: bankrupt,
+      detail: detail, orders: orders, purchase: purchase, cap: cap
+    };
+
+    S.totals.revenue += revenue;
+    S.totals.profit += profit;
+    S.totals.cogs += cogs;
+    S.totals.lost += (lostCap + lostStock);
+    S.totals.mkt += spend;
+    S.totals.units += sold;
+
+    S.history.push({
+      month: S.month, cash: S.cash, net: netWorth(), profit: profit, revenue: revenue
+    });
+    S.monthReports.push(rep);
+    S.lastReport = rep;
+    if (netWorth() > S.peakNet) { S.peakNet = netWorth(); }
+
+    /* 9. 递减事件时效 */
+    for (var z = 0; z < S.mods.length; z++) { S.mods[z].left -= 1; }
+    S.mods = S.mods.filter(function (x) { return x.left > 0; });
+
+    if (bankrupt) {
+      S.gameOver = true;
+      renderAll();
+      setTimeout(function () { endGame(true); }, 300);
+      return;
+    }
+
+    S.month += 1;
+    renderAll();
+
+    if (S.month > MAX_MONTH) {
+      S.gameOver = true;
+      setTimeout(function () { endGame(false); }, 320);
+      return;
+    }
+
+    setTimeout(function () { maybeEvent(); }, 260);
+  }
+
+  /* ================= 事件 ================= */
+  var EVENTS = [
+    {
+      id: "supplier", title: "供应商提价", desc: "上游原料涨价，老供应商要求下季度起提价 18%。",
+      opts: [
+        { label: "接受涨价", sub: "进货成本 +18%，持续 3 个月", fn: function () { addMod("cost", 1.18, 3, "原料涨价"); return "你接受了涨价。未来 3 个月毛利率被压缩，除非同步调价。"; } },
+        { label: "一次性付 ¥6,000 锁定旧价", sub: "现金支出，成本不变", fn: function () { payExtra(6000); return "你付了 6,000 元换来价格保护。现金少了，但毛利结构没动。"; } },
+        { label: "换用低价原料", sub: "成本 −12%（永久），但口碑 −12", fn: function () { addMod("cost", 0.88, 999, "低价原料"); S.rep -= 12; return "成本降了，但顾客尝得出差别——口碑掉了 12 点，后续需求会受影响。"; } }
+      ]
+    },
+    {
+      id: "influencer", title: "网红探店邀约", desc: "一位本地生活博主愿意来探店，报价 8,000 元。",
+      opts: [
+        { label: "付费合作", sub: "付 ¥8,000，口碑 +14，本月需求 +20%", fn: function () { payExtra(8000); S.rep = clamp(S.rep + 14, 5, 100); addMod("demand", 1.2, 1, "探店曝光"); return "视频上了热门。口碑涨到 " + Math.round(S.rep) + "，这个月的客流明显变多。"; } },
+        { label: "婉拒", sub: "不花钱，也不涨口碑", fn: function () { return "你婉拒了。省下 8,000 元，但也没换来曝光。"; } }
+      ]
+    },
+    {
+      id: "raise", title: "员工要求加薪", desc: "两名老员工提出加薪 8%，否则士气会受影响。",
+      opts: [
+        { label: "全员加薪 8%", sub: "工资成本永久 +8%，产能 +5%（永久）", fn: function () { S.wageMul *= 1.08; addMod("capacity", 1.05, 999, "熟练团队"); return "团队稳定了。工资涨 8%，但熟练度提升让产能多了 5%。"; } },
+        { label: "拒绝", sub: "本月产能 −15%，口碑 −4", fn: function () { addMod("capacity", 0.85, 1, "士气低落"); S.rep -= 4; return "你拒绝了。这个月出工不出力，产能掉了 15%。"; } }
+      ]
+    },
+    {
+      id: "rival", title: "竞品降价", desc: "隔街新开一家店，全线降价 10% 抢客。",
+      opts: [
+        { label: "跟进降价", sub: "市场参考价下移（永久），需求即时回升", fn: function () { S.compIndex = clamp(S.compIndex * 0.9, 0.86, 1.18); return "你跟着降价。守住了客流，但整个市场的价格锚点被拉低了。"; } },
+        { label: "坚持价格", sub: "本月需求 −12%，持续 2 个月", fn: function () { addMod("demand", 0.88, 2, "客流被分流"); return "你选择守住毛利。客流被抢走一部分，未来两个月需求承压。"; } },
+        { label: "加码营销", sub: "付 ¥6,000，本月需求 +14%", fn: function () { payExtra(6000); addMod("demand", 1.14, 1, "营销反击"); return "你花钱打了一轮营销战。这个月客流回来了，但成本也上去了。"; } }
+      ]
+    },
+    {
+      id: "rent", title: "房东涨租", desc: "房东通知：下月起租金上调。",
+      opts: [
+        { label: "接受", sub: "月租 +500（永久）", fn: function () { S.rentAdd += 500; return "你接受了。固定成本每月多 500，盈亏平衡点被推高。"; } },
+        { label: "谈判", sub: "50% 概率 +250，50% 概率 +900", fn: function () {
+          if (Math.random() < 0.5) { S.rentAdd += 250; return "谈判成功，只涨了 250。"; }
+          S.rentAdd += 900; return "房东不吃这一套，反手涨了 900。";
+        } }
+      ]
+    },
+    {
+      id: "audit", title: "合规抽检", desc: "监管部门例行检查，发现两项需要整改的小问题。",
+      opts: [
+        { label: "立即整改", sub: "付 ¥4,000", fn: function () { payExtra(4000); return "你花钱把问题都改好了，合规风险归零。"; } },
+        { label: "先拖着", sub: "50% 无事，50% 罚款 ¥15,000 且口碑 −12", fn: function () {
+          if (Math.random() < 0.5) { return "这次没被追究。你省了 4,000 元——但风险还在。"; }
+          payExtra(15000); S.rep -= 12; return "被复查抓到，罚款 15,000 元，口碑还掉了 12 点。";
+        } }
+      ]
+    }
+  ];
+
+  var AUTO_EVENTS = [
+    { id: "boom", title: "商圈爆火", desc: "附近新开的地铁口带来了大量人流，本月需求 +20%。", fn: function () { addMod("demand", 1.2, 1, "商圈红利"); return "本月客流上涨 20%，是冲销量、清库存的好时机。"; } },
+    { id: "broken", title: "设备故障", desc: "冷柜压缩机坏了，维修花了 5,000 元，本月产能 −20%。", fn: function () { payExtra(5000); addMod("capacity", 0.8, 1, "设备维修"); return "现金少了 5,000，产能还打了八折。"; } },
+    { id: "trend", title: "平台流量扶持", desc: "线上平台把你选进了推荐位，未来 2 个月需求 +15%，免费。", fn: function () { addMod("demand", 1.15, 2, "平台推荐"); return "白捡的流量。记得备货，别在最好的时候缺货。"; } }
+  ];
+
+  function maybeEvent() {
+    if (S.gameOver) { return; }
+    if (S.month < 2) { return; }
+    if (Math.random() > 0.5) { return; }
+
+    var pool = [];
+    for (var i = 0; i < EVENTS.length; i++) {
+      if (!S.seen[EVENTS[i].id]) { pool.push(EVENTS[i]); }
+    }
+    if (pool.length === 0) { return; }
+    var pick = pool[Math.floor(Math.random() * pool.length)];
+    S.seen[pick.id] = true;
+
+    var optsHtml = "";
+    for (var j = 0; j < pick.opts.length; j++) {
+      optsHtml += '<button class="opt" data-i="' + j + '">' + pick.opts[j].label +
+        (pick.opts[j].sub ? '<small>' + pick.opts[j].sub + '</small>' : '') + '</button>';
+    }
+
+    S.awaitingEvent = true;
+    el("modal").innerHTML =
+      '<div class="eyebrow">MONTH ' + S.month + ' · 突发情况</div>' +
+      '<h3>' + pick.title + '</h3>' +
+      '<p class="d">' + pick.desc + '</p>' + optsHtml;
+    el("overlay").classList.add("show");
+
+    var btns = el("modal").querySelectorAll(".opt");
+    for (var k = 0; k < btns.length; k++) {
+      btns[k].addEventListener("click", function () {
+        var idx = parseInt(this.getAttribute("data-i"), 10);
+        var msg = pick.opts[idx].fn();
+        S.awaitingEvent = false;
+        el("overlay").classList.remove("show");
+        renderAll();
+        toast(msg);
+      });
+    }
+  }
+
+  function autoEvent() {
+    var avail = [];
+    for (var i = 0; i < AUTO_EVENTS.length; i++) {
+      if (!S.seen[AUTO_EVENTS[i].id]) { avail.push(AUTO_EVENTS[i]); }
+    }
+    if (avail.length === 0) { return; }
+    var p = avail[Math.floor(Math.random() * avail.length)];
+    S.seen[p.id] = true;
+    var msg = p.fn();
+    S.awaitingEvent = true;
+    el("modal").innerHTML =
+      '<div class="eyebrow">MONTH ' + S.month + ' · 市场动态</div>' +
+      '<h3>' + p.title + '</h3>' +
+      '<p class="d">' + p.desc + '</p>' +
+      '<button class="opt" id="evOk">知道了，继续经营</button>';
+    el("overlay").classList.add("show");
+    el("evOk").addEventListener("click", function () {
+      S.awaitingEvent = false;
+      el("overlay").classList.remove("show");
+      renderAll();
+      toast(msg);
+    });
+  }
+
+  /* ================= 战报渲染 ================= */
+  function renderReport() {
+    var r = S.lastReport;
+    var box = el("reportBox");
+    if (!r) {
+      box.innerHTML = '<div class="empty"><b>还没有数据</b>在左侧定好价格与订货量，点击「结算本月」。<br/>每一笔决策都会立刻反映在利润表与现金流量表上。</div>';
+      el("repMonth").textContent = "尚未结算";
+      el("coach").innerHTML = "";
+      drawCharts();
+      return;
+    }
+
+    el("repMonth").textContent = "第 " + r.month + " 月结算";
+
+    var netCls = r.profit >= 0 ? "gold" : "red";
+    var html = '<div class="metrics">';
+    html += mCell("营业收入", money(r.revenue), "gold");
+    html += mCell("毛利", money(r.gross) + "<span style='font-size:10px;color:var(--dim2)'> " + pct(r.grossMargin, 0) + "</span>", "gold");
+    html += mCell("净利润", money(r.profit), netCls);
+    html += mCell("现金流", money(r.cash), r.cash < 0 ? "red" : "");
+    html += mCell("售出件数", fmt(r.sold), "");
+    html += mCell("缺货损失", fmt(r.lostCap + r.lostStock) + " 单", (r.lostCap + r.lostStock) > 5 ? "red" : "");
+    html += mCell("产能利用率", pct(clamp(r.sold / Math.max(r.cap, 1), 0, 1), 0), "");
+    html += mCell("库存市值", money(r.inv), "");
+    html += mCell("营销 ROI", r.spend > 0 ? (r.mktRoi >= 0 ? "+" : "") + pct(r.mktRoi, 0) : "—", r.spend > 0 ? (r.mktRoi >= 0 ? "grn" : "red") : "dim");
+    html += "</div>";
+    box.innerHTML = html;
+
+    el("coach").innerHTML = buildTips(r).join("");
+    drawCharts();
+  }
+
+  function mCell(label, value, cls) {
+    return '<div class="m"><span>' + label + '</span><b class="' + (cls || "") + '">' + value + '</b></div>';
+  }
+
+  function buildTips(r) {
+    var tips = [];
+    var cap = r.cap || capacity();
+    var util = r.totalDemand > 0 ? Math.min(1, cap / r.totalDemand) : 1;
+    var trueUtil = r.totalDemand > 0 ? r.sold / cap : 0;
+
+    if (r.autoBorrow > 0) {
+      tips.push(tip("warn", "⚠", "现金断裂，系统自动借款 <b>" + money(r.autoBorrow) + "</b> 补足。借款有利息，下一次请提前规划进货节奏——<b>企业死于现金流，不死于亏损</b>。"));
+    }
+    if (r.lostStock > 3) {
+      tips.push(tip("warn", "◍", "因缺货损失 <b>" + Math.round(r.lostStock) + " 单</b>。缺货不只是少赚，还会砸口碑（口碑已降至 " + Math.round(S.rep) + "）。下次订货量参考「预计需求」的 1.0～1.2 倍。"));
+    }
+    if (r.lostCap > 3) {
+      tips.push(tip("warn", "⚙", "产能只够服务 <b>" + pct(util, 0) + "</b> 的需求，白白流失 <b>" + Math.round(r.lostCap) + " 单</b>。此时再加营销是浪费——先加人（每人月成本 " + money(WAGE) + "，增产 " + CAP_PER_STAFF + " 单）。"));
+    }
+    if (trueUtil < 0.6 && r.totalDemand > 0) {
+      tips.push(tip("info", "◔", "产能利用率仅 <b>" + pct(trueUtil, 0) + "</b>，固定成本被摊薄得不够。要么扩需求（降价 / 营销），要么减人降本。"));
+    }
+    if (r.spend > 0 && r.mktRoi < 0) {
+      tips.push(tip("warn", "✕", "本月营销投入 " + money(r.spend) + " 的 ROI 为 <b>" + pct(r.mktRoi, 0) + "</b>，净亏损。" + (util < 0.95 ? "原因很可能是产能打满，营销拉来的需求接不住。" : "营销已进入边际递减区，减半投入未必减半效果。")));
+    } else if (r.spend > 0 && r.mktRoi > 1) {
+      tips.push(tip("good", "✓", "营销 ROI 达 <b>" + pct(r.mktRoi, 0) + "</b>，每投 1 元赚回 " + r.mktRoi.toFixed(1) + " 元毛利。这个区间是有效投放，可以继续。"));
+    }
+    if (r.grossMargin < 0.28 && r.revenue > 0) {
+      tips.push(tip("info", "◎", "毛利率 <b>" + pct(r.grossMargin, 0) + "</b> 偏低。要么提价（先看弹性），要么把低价引流品的占比压下来——<b>卖得多不等于赚得多</b>。"));
+    }
+    if (r.inv > 0 && r.sold > 0) {
+      var months = r.inv / (r.cogs || 1);
+      if (months > 2.2) {
+        tips.push(tip("info", "▣", "库存相当于 <b>" + months.toFixed(1) + " 个月</b>的销货成本，压了不少现金。库存每月还要吃 1.5% 的持有成本。"));
+      }
+    }
+    if (r.cash < (rentNow() + wageNow()) * 1.2) {
+      tips.push(tip("warn", "◈", "现金 " + money(r.cash) + " 已低于 1.2 个月的固定支出（" + money(rentNow() + wageNow()) + "）。安全垫太薄，一次意外就会触发高息借款。"));
+    }
+    if (tips.length === 0) {
+      tips.push(tip("good", "✓", "这个月经营稳健：收支平衡、库存合理、产能匹配。继续保持，并思考如何把 <b>净资产</b> 从 " + money(netWorth()) + " 推到更高。"));
+    }
+    return tips.slice(0, 3);
+  }
+
+  function tip(kind, ic, text) {
+    return '<div class="tip ' + kind + '"><span class="ic">' + ic + '</span><span>' + text + '</span></div>';
+  }
+
+  /* ================= 图表 ================= */
+  function prepCanvas(cv) {
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth || 400;
+    var h = cv.clientHeight || 120;
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    var ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function drawCharts() {
+    var pts = S.history;
+    var c1 = prepCanvas(el("chart1"));
+    var c2 = prepCanvas(el("chart2"));
+
+    if (pts.length === 0) {
+      drawEmpty(c1, "现金 / 净资产走势");
+      drawEmpty(c2, "月度净利润");
+      return;
+    }
+
+    /* --- 折线图：现金 & 净资产 --- */
+    var padL = 8, padR = 8, padT = 10, padB = 14;
+    var iw = c1.w - padL - padR;
+    var ih = c1.h - padT - padB;
+    var vals = [START_CASH];
+    for (var i = 0; i < pts.length; i++) { vals.push(pts[i].cash, pts[i].net); }
+    var mn = Math.min.apply(null, vals);
+    var mx = Math.max.apply(null, vals);
+    if (mx - mn < 1) { mx = mn + 1000; }
+    var pad = (mx - mn) * 0.12;
+    mn -= pad; mx += pad;
+    var n = pts.length;
+    var xOf = function (idx) { return padL + (n <= 1 ? iw / 2 : (idx / (n - 1)) * iw); };
+    var yOf = function (v) { return padT + ih - ((v - mn) / (mx - mn)) * ih; };
+
+    // 网格
+    c1.ctx.strokeStyle = "#1b222b";
+    c1.ctx.lineWidth = 1;
+    for (var g = 0; g <= 3; g++) {
+      var gy = padT + (ih / 3) * g;
+      c1.ctx.beginPath(); c1.ctx.moveTo(padL, gy); c1.ctx.lineTo(padL + iw, gy); c1.ctx.stroke();
+    }
+    // 起始资金基准线
+    var yBase = yOf(START_CASH);
+    c1.ctx.strokeStyle = "#3a4553";
+    c1.ctx.setLineDash([4, 4]);
+    c1.ctx.beginPath(); c1.ctx.moveTo(padL, yBase); c1.ctx.lineTo(padL + iw, yBase); c1.ctx.stroke();
+    c1.ctx.setLineDash([]);
+
+    // 面积 + 线
+    drawSeries(c1, pts, "net", "#48c8ef", xOf, yOf, padT, ih);
+    drawSeries(c1, pts, "cash", "#f3b544", xOf, yOf, padT, ih);
+
+    // 末点标注
+    var last = pts[n - 1];
+    dot(c1, xOf(n - 1), yOf(last.net), "#48c8ef");
+    dot(c1, xOf(n - 1), yOf(last.cash), "#f3b544");
+
+    /* --- 柱状图：月净利 --- */
+    var p2t = 8, p2b = 12, p2l = 6, p2r = 6;
+    var iw2 = c2.w - p2l - p2r;
+    var ih2 = c2.h - p2t - p2b;
+    var maxAbs = 1;
+    for (var q = 0; q < pts.length; q++) { maxAbs = Math.max(maxAbs, Math.abs(pts[q].profit)); }
+    var zeroY = p2t + ih2 / 2;
+    var scale = (ih2 / 2) / maxAbs;
+
+    c2.ctx.strokeStyle = "#2a3441";
+    c2.ctx.beginPath(); c2.ctx.moveTo(p2l, zeroY); c2.ctx.lineTo(p2l + iw2, zeroY); c2.ctx.stroke();
+
+    var slot = iw2 / MAX_MONTH;
+    var bw = Math.max(3, slot * 0.6);
+    for (var r2 = 0; r2 < pts.length; r2++) {
+      if (pts[r2].month < 1) { continue; }
+      var cx = p2l + slot * (pts[r2].month - 0.5);
+      var hgt = pts[r2].profit * scale;
+      c2.ctx.fillStyle = pts[r2].profit >= 0 ? "#2ecf8f" : "#f2565c";
+      c2.ctx.globalAlpha = 0.88;
+      if (hgt >= 0) {
+        c2.ctx.fillRect(cx - bw / 2, zeroY - hgt, bw, hgt);
+      } else {
+        c2.ctx.fillRect(cx - bw / 2, zeroY, bw, -hgt);
+      }
+      c2.ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawSeries(c, pts, key, color, xOf, yOf, padT, ih) {
+    var n = pts.length;
+    if (n === 0) { return; }
+    c.ctx.beginPath();
+    c.ctx.moveTo(xOf(0), yOf(pts[0][key]));
+    for (var i = 1; i < n; i++) { c.ctx.lineTo(xOf(i), yOf(pts[i][key])); }
+    c.ctx.strokeStyle = color;
+    c.ctx.lineWidth = 1.8;
+    c.ctx.lineJoin = "round";
+    c.ctx.stroke();
+
+    // 渐变面积
+    var grad = c.ctx.createLinearGradient(0, padT, 0, padT + ih);
+    grad.addColorStop(0, color + "30");
+    grad.addColorStop(1, color + "00");
+    c.ctx.lineTo(xOf(n - 1), padT + ih);
+    c.ctx.lineTo(xOf(0), padT + ih);
+    c.ctx.closePath();
+    c.ctx.fillStyle = grad;
+    c.ctx.fill();
+  }
+
+  function dot(c, x, y, color) {
+    c.ctx.beginPath();
+    c.ctx.arc(x, y, 3, 0, Math.PI * 2);
+    c.ctx.fillStyle = color;
+    c.ctx.fill();
+    c.ctx.beginPath();
+    c.ctx.arc(x, y, 5.5, 0, Math.PI * 2);
+    c.ctx.strokeStyle = color + "55";
+    c.ctx.lineWidth = 2;
+    c.ctx.stroke();
+  }
+
+  function drawEmpty(c, label) {
+    c.ctx.fillStyle = "#2b3542";
+    c.ctx.font = "11px ui-monospace, monospace";
+    c.ctx.textAlign = "center";
+    c.ctx.fillText(label + " · 暂无数据", c.w / 2, c.h / 2);
+  }
+
+  /* ================= 结局面板 ================= */
+  function endGame(bankrupt) {
+    var nw = netWorth();
+    var startNet = START_CASH + START_INV.A * 16 + START_INV.B * 44 + START_INV.C * 104;
+    var grade, sub;
+    if (bankrupt) {
+      grade = "出局"; sub = "BANKRUPT · 现金流断裂";
+    } else if (nw < 0) {
+      grade = "出局"; sub = "INSOLVENT · 资不抵债";
+    } else if (nw < 60000) { grade = "街边学徒"; sub = "APPRENTICE"; }
+    else if (nw < 120000) { grade = "小老板"; sub = "SHOPKEEPER"; }
+    else if (nw < 240000) { grade = "掌 柜"; sub = "MANAGER"; }
+    else if (nw < 420000) { grade = "商 人"; sub = "MERCHANT"; }
+    else if (nw < 580000) { grade = "大 商"; sub = "MAGNATE"; }
+    else { grade = "商业巨擘"; sub = "TYCOON"; }
+
+    var avgMargin = S.totals.revenue > 0 ? (S.totals.revenue - S.totals.cogs) / S.totals.revenue : 0;
+    var roi = (nw - startNet) / startNet;
+
+    var diag = [];
+    if (S.totals.lost > 300) {
+      diag.push(tip("warn", "◍", "全程因缺货 / 产能不足损失 <b>" + fmt(S.totals.lost) + " 单</b>。这是最大的隐性亏损——<b>能卖出去却没货卖，比卖不出去更痛</b>。"));
+    }
+    if (avgMargin < 0.3 && S.totals.revenue > 0) {
+      diag.push(tip("info", "◎", "综合毛利率 <b>" + pct(avgMargin, 0) + "</b>。低价冲量的代价是每一单的绝对毛利变薄，固定成本更难覆盖。"));
+    } else if (avgMargin > 0.45) {
+      diag.push(tip("good", "✓", "综合毛利率 <b>" + pct(avgMargin, 0) + "</b>，定价能力强，产品结构健康。"));
+    }
+    if (S.totals.mkt > 0) {
+      var mktShare = S.totals.mkt / Math.max(S.totals.revenue, 1);
+      diag.push(tip("info", "◈", "营销总投入 " + money(S.totals.mkt) + "，占营收 <b>" + pct(mktShare, 1) + "</b>。" + (mktShare > 0.18 ? "占比偏高，已接近靠买流量维持增长。" : "占比健康，主要增长来自产品与口碑本身。")));
+    }
+    if (S.debt > 0) {
+      diag.push(tip("warn", "◈", "结算时仍有负债 " + money(S.debt) + "。杠杆放大收益，但也让下一次意外更致命。"));
+    }
+    if (S.level > 0) {
+      diag.push(tip("good", "▤", "完成了 <b>" + S.level + " 级</b>门店升级——长期资产投入换来了更高的客流上限。"));
+    }
+    if (diag.length === 0) {
+      diag.push(tip("good", "✓", "全程无重大失误：没有缺货、没有高息负债、毛利结构稳定。"));
+    }
+
+    el("modal").innerHTML =
+      '<div class="eyebrow">' + (bankrupt ? "GAME OVER" : "FINAL REPORT") + '</div>' +
+      '<div class="grade"><div class="g">' + grade + '</div><div class="s">' + sub + '</div></div>' +
+      '<div class="big ' + (nw >= START_CASH ? "gold" : "red") + '">' + money(nw) + '</div>' +
+      '<div class="bigsub">期末净资产 · 起始 ' + money(startNet) + ' · 累计回报 <b style="color:' +
+        (roi >= 0 ? "#2ecf8f" : "#f2565c") + '">' + (roi >= 0 ? "+" : "") + pct(roi, 0) + '</b></div>' +
+      '<div class="metrics" style="margin-bottom:14px">' +
+        mCell("累计营收", money(S.totals.revenue), "gold") +
+        mCell("累计净利", money(S.totals.profit), S.totals.profit >= 0 ? "gold" : "red") +
+        mCell("售出件数", fmt(S.totals.units), "") +
+        mCell("峰值净资产", money(S.peakNet), "cyan") +
+        mCell("综合毛利率", pct(avgMargin, 0), "") +
+        mCell("缺货损失", fmt(S.totals.lost) + " 单", S.totals.lost > 200 ? "red" : "") +
+      '</div>' +
+      '<div class="diag">' + diag.join("") + '</div>' +
+      '<div class="tip info" style="margin-top:10px"><span class="ic">∑</span><span>' +
+        '累计净利 <b>' + money(S.totals.profit) + '</b> 与净资产增长 <b>' + money(nw - startNet) +
+        '</b> 不相等，这是正常的：门店升级 <b>' + money(S.totals.capex) + '</b>、突发支出 <b>' +
+        money(S.totals.extra) + '</b> 花掉了真金白银，却不进利润表。<b>利润、现金、净资产，是三件不同的事。</b></span></div>' +
+      '<button class="opt" id="againBtn" style="margin-top:16px;text-align:center">再开一局</button>';
+
+    el("overlay").classList.add("show");
+    el("againBtn").addEventListener("click", function () {
+      el("overlay").classList.remove("show");
+      restart();
+    });
+  }
+
+  /* ================= 主渲染 ================= */
+  function renderAll() {
+    renderHud();
+    renderReport();
+    if (!S.gameOver) { updatePreview(); }
+    el("btnSettle").disabled = S.gameOver;
+    el("btnSettle").textContent = S.gameOver ? "本局已结束" : "结 算 本 月  →";
+  }
+
+  /* ================= 交互绑定 ================= */
+  function bindOnce() {
+    el("decBody").addEventListener("input", function () { updatePreview(); });
+
+    el("mkt").addEventListener("input", function () {
+      updateSliderFill();
+      updatePreview();
+    });
+
+    el("staffPlus").addEventListener("click", function () {
+      if (S.staff >= 8) { toast("最多 8 名员工，再多也管不过来。"); return; }
+      S.staff += 1; updatePreview();
+    });
+    el("staffMinus").addEventListener("click", function () {
+      if (S.staff <= 1) { toast("至少要留 1 个人看店。"); return; }
+      S.staff -= 1; updatePreview();
+    });
+
+    el("btnBorrow").addEventListener("click", function () {
+      var amt = Math.round(parseFloat(el("loanAmt").value) || 0);
+      if (amt <= 0) { toast("请输入借款金额。"); return; }
+      if (S.debt + amt > LOAN_LIMIT) {
+        toast("超出授信额度：最高可借 " + money(LOAN_LIMIT) + "，当前已借 " + money(S.debt) + "。");
+        return;
+      }
+      S.debt += amt; S.cash += amt;
+      renderHud(); updatePreview();
+      toast("借入 " + money(amt) + "，月息 " + pct(LOAN_RATE, 1) + "（每月 " + money(S.debt * LOAN_RATE) + "）。");
+    });
+
+    el("btnRepay").addEventListener("click", function () {
+      var amt = Math.round(parseFloat(el("loanAmt").value) || 0);
+      if (amt <= 0) { toast("请输入还款金额。"); return; }
+      if (S.debt <= 0) { toast("目前没有负债。"); return; }
+      var actual = Math.min(amt, S.debt);
+      if (actual > S.cash) { toast("现金不足，账上只有 " + money(S.cash) + "。"); return; }
+      S.debt -= actual; S.cash -= actual;
+      renderHud(); updatePreview();
+      toast("还款 " + money(actual) + "，剩余负债 " + money(S.debt) + "。");
+    });
+
+    el("btnUpgrade").addEventListener("click", function () {
+      if (S.level >= MAX_LEVEL) { return; }
+      var cost = UP_COST[S.level];
+      if (S.cash < cost) { toast("现金不足：升级需要 " + money(cost) + "。"); return; }
+      S.cash -= cost;
+      S.totals.capex += cost;
+      S.level += 1;
+      el("btnUpgrade").textContent = S.level >= MAX_LEVEL ? "门店已满级" : "门店升级 " + money(UP_COST[S.level]);
+      el("btnUpgrade").disabled = S.level >= MAX_LEVEL;
+      renderHud(); updatePreview();
+      toast("门店升级至 LV." + S.level + "：客流 +" + pct(UP_DEMAND, 0) + "，产能 +" + CAP_PER_LEVEL + "，月租 +" + money(RENT_PER_LVL) + "。");
+    });
+
+    el("btnSettle").addEventListener("click", function () { settle(); });
+
+    var rt = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { drawCharts(); }, 180);
+    });
+
+    document.addEventListener("gesturestart", function (e) { e.preventDefault(); });
+  }
+
+  /* ================= 启动 ================= */
+  function restart() {
+    S = newState();
+    el("overlay").classList.remove("show");
+    el("toast").classList.remove("show");
+    renderDecisions();
+    renderAll();
+    el("btnUpgrade").disabled = false;
+    el("btnUpgrade").textContent = "门店升级 " + money(UP_COST[0]);
+  }
+
+  function boot() {
+    S = newState();
+    bindOnce();
+    renderDecisions();
+    renderAll();
+    if (Math.random() < 0.55) {
+      setTimeout(function () { autoEvent(); }, 900);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+</body>
+</html>

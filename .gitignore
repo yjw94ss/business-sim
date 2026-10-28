@@ -1,0 +1,9 @@
+.DS_Store
+._*
+node_modules/
+shot-*.png
+test.js
+test2.js
+test3.js
+validate.js
+snap.js
