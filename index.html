@@ -149,7 +149,7 @@ img.av{object-fit:cover;object-position:center 18%;background:#12161c;box-shadow
 .sku-t{min-width:0}
 .sku-t b{display:block;font-size:12px;line-height:1.35}
 .sku-t i{font-style:normal;font-size:9px;color:var(--dim2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.scene{width:100%;height:300px;object-fit:cover;object-position:center 45%;border-radius:10px;display:block;margin-bottom:9px;border:1px solid var(--line);cursor:pointer;transition:.15s}
+.scene{width:100%;height:300px;object-fit:cover;object-position:center 45%;border-radius:10px;display:block;margin-bottom:9px;border:1px solid var(--line);cursor:pointer;transition:.15s;background:#0e1319}
 .scene:hover{filter:brightness(1.1)}
 @media (max-width:700px){.scene{height:200px}}
 .sku-in{display:flex;gap:6px}
@@ -651,7 +651,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
       S.cash -= cost; S.totals.capex += cost; S.level += 1;
       renderHud(); updateCard();
       setShop(S.level);
-      toast("门店 LV." + S.level + " · " + SHOP_NAMES[S.level] + "：客流 +" + pct(UP_DEMAND) + "，产能 +" + CAP_PER_LEVEL + "，月租 +" + money(RENT_PER_LVL) + "。", "ok");
+      // 升级细节由下方阿珍的消息承载，这里不再重复弹提示，免得压住对话
       const shopMsg = push("zhen",
         '<img class="scene" src="assets/shop' + S.level + '.webp" alt="门店 LV.' + S.level + '">' +
         '<div class="ev-r">店面翻新好了 —— <b>' + SHOP_NAMES[S.level] + '</b>。客流 <b>+' + pct(UP_DEMAND) +
