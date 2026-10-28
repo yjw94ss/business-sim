@@ -86,9 +86,16 @@ body{
 @keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
 .msg.me{flex-direction:row-reverse}
 .av{
-  width:31px;height:31px;border-radius:10px;display:grid;place-items:center;flex:none;
+  width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex:none;
   font-size:12px;font-weight:700;margin-top:2px;box-shadow:0 0 0 1px #ffffff0d inset;
 }
+img.av{object-fit:cover;object-position:center 18%;background:#12161c;box-shadow:0 0 0 1px #ffffff14 inset}
+
+/* 门店 chip */
+.chip.shop{cursor:pointer;transition:.15s;border-color:#3a3016}
+.chip.shop:hover{border-color:var(--gold);background:#171208}
+.chip.shop b{color:var(--gold)}
+
 .bub{
   max-width:min(78%,560px);background:var(--bub);border:1px solid var(--line);
   border-radius:13px;padding:9px 12px;font-size:13px;line-height:1.65;
@@ -137,9 +144,14 @@ body{
 .skus{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 @media (max-width:700px){.skus{grid-template-columns:1fr;gap:6px}}
 .sku{background:#0a0e13;border:1px solid var(--line);border-radius:9px;padding:7px 8px}
-.sku-h{display:flex;align-items:baseline;gap:5px;margin-bottom:6px}
-.sku-h b{font-size:12px}
-.sku-h i{font-style:normal;font-size:9px;color:var(--dim2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sku-top{display:flex;gap:8px;align-items:center;margin-bottom:7px}
+.sku-img{width:42px;height:42px;border-radius:8px;object-fit:cover;flex:none;display:block;background:#0a0e13;filter:brightness(1.12)}
+.sku-t{min-width:0}
+.sku-t b{display:block;font-size:12px;line-height:1.35}
+.sku-t i{font-style:normal;font-size:9px;color:var(--dim2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scene{width:100%;height:300px;object-fit:cover;object-position:center 45%;border-radius:10px;display:block;margin-bottom:9px;border:1px solid var(--line);cursor:pointer;transition:.15s}
+.scene:hover{filter:brightness(1.1)}
+@media (max-width:700px){.scene{height:200px}}
 .sku-in{display:flex;gap:6px}
 .fld{flex:1;min-width:0}
 .fld label{display:block;font-size:9px;color:var(--dim2);margin-bottom:2px}
@@ -215,12 +227,13 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
 .ev-r b{color:var(--gold2)}
 
 .toast{
-  position:fixed;left:50%;bottom:26px;transform:translate(-50%,12px);opacity:0;pointer-events:none;
+  position:fixed;left:50%;top:72px;transform:translate(-50%,-12px);opacity:0;pointer-events:none;
   background:#1d232b;border:1px solid var(--line2);border-left:3px solid var(--red);
   padding:9px 15px;border-radius:9px;font-size:12px;box-shadow:0 18px 50px -18px #000;
   transition:.25s;z-index:90;max-width:86vw;
 }
 .toast.show{opacity:1;transform:translate(-50%,0)}
+@media (max-width:700px){.toast{top:64px;font-size:11.5px;padding:8px 13px;max-width:92vw}}
 
 .overlay{
   position:fixed;inset:0;background:rgba(4,6,9,.84);backdrop-filter:blur(7px);
@@ -272,6 +285,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
       <div class="chip"><span>净资产</span><b class="cyan" id="hNet">¥65,368</b></div>
       <div class="chip" id="chipDebt" style="display:none"><span>负债</span><b id="hDebt">¥0</b></div>
       <div class="chip"><span>口碑</span><b id="hRep">65</b></div>
+      <button class="chip shop" id="btnShop" title="查看门店"><span>门店</span><b id="shopLv">LV.0</b></button>
       <button class="icon-btn" id="btnLore" title="商业心法">?</button>
     </div>
   </header>
@@ -292,9 +306,9 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
   const START_INV = { A: 120, B: 50, C: 12 };
 
   const SKUS = [
-    { id: "A", name: "基础款", tag: "引流 · 高敏感", cost: 16,  ref: 34,  base: 320, e: 1.9  },
-    { id: "B", name: "升级款", tag: "主力 · 中敏感", cost: 44,  ref: 95,  base: 130, e: 1.7  },
-    { id: "C", name: "旗舰款", tag: "利润 · 低敏感", cost: 104, ref: 260, base: 32,  e: 1.55 }
+    { id: "A", name: "基础款", tag: "白瓷杯 · 引流 · 高敏感", cost: 16,  ref: 34,  base: 320, e: 1.9,  img: "assets/sku_a.webp" },
+    { id: "B", name: "升级款", tag: "手冲套装 · 主力 · 中敏感", cost: 44,  ref: 95,  base: 130, e: 1.7,  img: "assets/sku_b.webp" },
+    { id: "C", name: "旗舰款", tag: "黄铜礼盒 · 利润 · 低敏感", cost: 104, ref: 260, base: 32,  e: 1.55, img: "assets/sku_c.webp" }
   ];
 
   const WAGE = 3200, CAP_PER_STAFF = 250, CAP_BASE = 30, CAP_PER_LEVEL = 80;
@@ -314,15 +328,12 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   const CHARS = {
-    zhen: { name: "阿珍", role: "店长助理", av: "珍", bg: "#3a2e12", fg: "#f3b544" },
-    lin:  { name: "小林", role: "会计",     av: "林", bg: "#12303a", fg: "#48c8ef" },
-    zhou: { name: "老周", role: "商业顾问", av: "周", bg: "#12332a", fg: "#2ecf8f" },
-    chen: { name: "陈老板", role: "供货商", av: "陈", bg: "#2b2142", fg: "#b08cf0" },
-    fang: { name: "房东", role: "",         av: "房", bg: "#3a2020", fg: "#f2565c" },
-    bo:   { name: "阿May", role: "本地博主", av: "M", bg: "#3a1f30", fg: "#ff8fc4" },
-    yuan: { name: "小李", role: "店员",     av: "李", bg: "#1f2b3a", fg: "#7fb6ff" },
-    guan: { name: "监管员", role: "",       av: "监", bg: "#332a12", fg: "#e0c06a" },
-    jing: { name: "隔壁老王", role: "同行", av: "王", bg: "#2a2a2a", fg: "#c0c0c0" },
+    zhen: { name: "阿珍", role: "店长助理", av: "珍", bg: "#3a2e12", fg: "#f3b544", img: "assets/zhen.webp" },
+    lin:  { name: "小林", role: "会计",     av: "林", bg: "#12303a", fg: "#48c8ef", img: "assets/lin.webp" },
+    zhou: { name: "老周", role: "商业顾问", av: "周", bg: "#12332a", fg: "#2ecf8f", img: "assets/zhou.webp" },
+    chen: { name: "陈老板", role: "供货商", av: "陈", bg: "#2b2142", fg: "#b08cf0", img: "assets/chen.webp" },
+    fang: { name: "房东", role: "",         av: "房", bg: "#3a2020", fg: "#f2565c", img: "assets/fang.webp" },
+    bo:   { name: "阿May", role: "本地博主", av: "M", bg: "#3a1f30", fg: "#ff8fc4", img: "assets/bo.webp" },
     sys:  { name: "系统", role: "",         av: "·", bg: "#232b35", fg: "#8a97a8" },
     me:   { name: "我", role: "",           av: "我", bg: "#4a3a17", fg: "#ffd479" }
   };
@@ -393,10 +404,61 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
     el("hRep").className = S.rep < 45 ? "red" : (S.rep > 78 ? "grn" : "");
   }
 
+  const SHOP_NAMES = ["街边小店", "翻新小铺", "双层门店", "旗舰店"];
+
+  function setShop(level) {
+    el("shopLv").textContent = "LV." + level;
+  }
+
+  function showShop() {
+    const lv = S.level;
+    const next = lv < MAX_LEVEL ? UP_COST[lv] : null;
+    let h = '<div class="eyebrow">YOUR STORE</div>';
+    h += '<img class="scene" style="margin-bottom:12px" src="assets/shop' + lv + '.webp" alt="">';
+    h += '<h3>' + SHOP_NAMES[lv] + ' <span style="font-size:11px;color:var(--gold);font-family:var(--mono)">LV.' + lv + '</span></h3>';
+    h += '<div class="diag">';
+    h += '<div class="tip info">现在：客流 <b>×' + (1 + lv * UP_DEMAND).toFixed(2) + '</b>，基础产能 <b>' +
+      (CAP_BASE + lv * CAP_PER_LEVEL) + '</b> 单，月租 <b>' + money(rentNow()) + '</b>。</div>';
+    if (next) {
+      h += '<div class="tip good">下一级「' + SHOP_NAMES[lv + 1] + '」：花 <b>' + money(next) + '</b>，客流再 <b>+' +
+        pct(UP_DEMAND) + '</b>，产能 <b>+' + CAP_PER_LEVEL + '</b>，月租 <b>+' + money(RENT_PER_LVL) + '</b>。</div>';
+    } else {
+      h += '<div class="tip warn">已经是最高等级了。再往上，只能靠人和货。</div>';
+    }
+    h += '</div><button class="close" id="shopClose">回去做生意</button>';
+    el("modal").innerHTML = h;
+    el("overlay").classList.add("show");
+    el("shopClose").addEventListener("click", () => el("overlay").classList.remove("show"));
+  }
+
   /* ================= 消息流 ================= */
   function scrollDown() {
     const st = el("stream");
     setTimeout(() => { if (st) st.scrollTop = st.scrollHeight; }, 40);
+  }
+
+  function avatarEl(c) {
+    if (c.img) {
+      const img = document.createElement("img");
+      img.className = "av";
+      img.src = c.img;
+      img.alt = c.name;
+      img.addEventListener("error", function () {
+        const d = document.createElement("div");
+        d.className = "av";
+        d.style.background = c.bg;
+        d.style.color = c.fg;
+        d.textContent = c.av;
+        if (img.parentNode) img.parentNode.replaceChild(d, img);
+      });
+      return img;
+    }
+    const d = document.createElement("div");
+    d.className = "av";
+    d.style.background = c.bg;
+    d.style.color = c.fg;
+    d.textContent = c.av;
+    return d;
   }
 
   function push(role, html, opts) {
@@ -404,14 +466,26 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
     const c = CHARS[role] || CHARS.sys;
     const wrap = document.createElement("div");
     wrap.className = "msg" + (role === "me" ? " me" : "") + (opts.wide ? " wide" : "");
-    const who = role === "me" ? "" :
-      '<div class="who">' + c.name + (c.role ? "<i>" + c.role + "</i>" : "") + "</div>";
-    wrap.innerHTML =
-      '<div class="av" style="background:' + c.bg + ";color:" + c.fg + '">' + c.av + "</div>" +
-      '<div class="bub">' + who + html + "</div>";
-    el("stream").appendChild(wrap);
-    scrollDown();
+    wrap.appendChild(avatarEl(c));
+    const bub = document.createElement("div");
+    bub.className = "bub";
+    bub.innerHTML =
+      (role === "me" ? "" : '<div class="who">' + c.name + (c.role ? "<i>" + c.role + "</i>" : "") + "</div>") + html;
+    wrap.appendChild(bub);
+    if (opts.before && opts.before.parentNode) {
+      opts.before.parentNode.insertBefore(wrap, opts.before);
+    } else {
+      el("stream").appendChild(wrap);
+      scrollDown();
+    }
     return wrap;
+  }
+
+  function scrollToEl(node) {
+    const st = el("stream");
+    const rn = node.getBoundingClientRect();
+    const rs = st.getBoundingClientRect();
+    st.scrollTo({ top: st.scrollTop + (rn.top - rs.top) - 10, behavior: "smooth" });
   }
 
   function divider(text) {
@@ -427,9 +501,11 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
     const c = CHARS[role] || CHARS.sys;
     const wrap = document.createElement("div");
     wrap.className = "msg";
-    wrap.innerHTML =
-      '<div class="av" style="background:' + c.bg + ";color:" + c.fg + '">' + c.av + "</div>" +
-      '<div class="bub typing"><i></i><i></i><i></i></div>';
+    wrap.appendChild(avatarEl(c));
+    const bub = document.createElement("div");
+    bub.className = "bub typing";
+    bub.innerHTML = "<i></i><i></i><i></i>";
+    wrap.appendChild(bub);
     el("stream").appendChild(wrap);
     scrollDown();
     return new Promise(resolve => setTimeout(() => {
@@ -461,7 +537,10 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
     SKUS.forEach(s => {
       skuHtml +=
         '<div class="sku">' +
-          '<div class="sku-h"><b>' + s.name + '</b><i>' + s.tag + ' · 进¥' + s.cost + '</i></div>' +
+          '<div class="sku-top">' +
+            '<img class="sku-img" src="' + s.img + '" alt="' + s.name + '" loading="lazy">' +
+            '<div class="sku-t"><b>' + s.name + '</b><i>' + s.tag + ' · 进¥' + s.cost + '</i></div>' +
+          '</div>' +
           '<div class="sku-in">' +
             '<div class="fld"><label>定价</label><input id="d_price_' + s.id + '" type="number" inputmode="numeric" min="1" step="1" value="' + S.prices[s.id] + '"></div>' +
             '<div class="fld"><label>订货</label><input id="d_order_' + s.id + '" type="number" inputmode="numeric" min="0" step="10" value="' + (S.lastOrder[s.id] || 0) + '"></div>' +
@@ -471,7 +550,6 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
     });
 
     cardNode.innerHTML =
-      '<div class="av" style="background:' + c.bg + ";color:" + c.fg + '">' + c.av + "</div>" +
       '<div class="bub" style="padding:0;background:transparent;border:0;box-shadow:none;width:calc(100% - 40px);max-width:calc(100% - 40px)">' +
         '<div class="card">' +
           '<div class="card-h"><span class="dot"></span>第 ' + S.month + ' 月 · 定价与备货' +
@@ -498,6 +576,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
         "</div>" +
       "</div>";
 
+    cardNode.insertBefore(avatarEl(c), cardNode.firstChild);
     el("stream").appendChild(cardNode);
     bindCard();
     updateCard();
@@ -569,7 +648,14 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
       if (S.cash < cost) { toast("现金不足：升级要 " + money(cost) + "。"); return; }
       S.cash -= cost; S.totals.capex += cost; S.level += 1;
       renderHud(); updateCard();
-      toast("门店 LV." + S.level + "：客流 +" + pct(UP_DEMAND) + "，产能 +" + CAP_PER_LEVEL + "，月租 +" + money(RENT_PER_LVL) + "。");
+      setShop(S.level);
+      toast("门店 LV." + S.level + " · " + SHOP_NAMES[S.level] + "：客流 +" + pct(UP_DEMAND) + "，产能 +" + CAP_PER_LEVEL + "，月租 +" + money(RENT_PER_LVL) + "。");
+      const shopMsg = push("zhen",
+        '<img class="scene" src="assets/shop' + S.level + '.webp" alt="门店 LV.' + S.level + '">' +
+        '<div class="ev-r">店面翻新好了 —— <b>' + SHOP_NAMES[S.level] + '</b>。客流 <b>+' + pct(UP_DEMAND) +
+        '</b>，产能 <b>+' + CAP_PER_LEVEL + '</b> 单，月租 <b>+' + money(RENT_PER_LVL) + '</b>。</div>',
+        { wide: true, before: cardNode });
+      scrollToEl(shopMsg);
     });
 
     el("d_settle").addEventListener("click", settle);
@@ -812,11 +898,11 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
       { label: "付费合作", sub: "付 ¥8,000，口碑 +14，本月需求 +20%", fn: () => { payExtra(8000); S.rep = clamp(S.rep + 14, 5, 100); addMod("demand", 1.2, 1, "探店曝光"); return "视频上了同城热门。口碑涨到 " + Math.round(S.rep) + "，这个月店里明显忙了。"; } },
       { label: "婉拒", sub: "不花钱，也不涨口碑", fn: () => "你婉拒了。省下 8,000 元，也没换来曝光。" }
     ]},
-    { id: "raise", who: "yuan", title: "店员要求加薪", desc: "小李干了一年，提出加薪 8%，不然心里不太舒服。", opts: [
+    { id: "raise", who: "zhen", title: "店员要求加薪", desc: "阿珍拿着一份联名信进来：店里几个老员工希望加薪 8%，不然人心不太稳。", opts: [
       { label: "全员加薪 8%", sub: "工资成本永久 +8%，产能 +5%", fn: () => { S.wageMul *= 1.08; addMod("capacity", 1.05, 999, "熟练团队"); return "团队安定了。工资涨 8%，但熟手干活快，产能多出 5%。"; } },
       { label: "拒绝", sub: "本月产能 −15%，口碑 −4", fn: () => { addMod("capacity", 0.85, 1, "士气低落"); S.rep -= 4; return "你没松口。这个月出工不出力，产能掉了 15%。"; } }
     ]},
-    { id: "rival", who: "jing", title: "竞品降价", desc: "隔街新开一家店，全线降价 10%，明显是冲着你的客流来的。", opts: [
+    { id: "rival", who: "zhen", title: "竞品降价", desc: "阿珍把隔壁的价目表拍在桌上：老王全线降了 10%，今天进店问价的人少了一半。", opts: [
       { label: "跟进降价", sub: "市场参考价下移（永久），需求即时回升", fn: () => { S.compIndex = clamp(S.compIndex * 0.9, 0.86, 1.18); return "你跟着降了。客流守住了，但整条街的价格锚点被拉低 —— 以后想涨回来就难了。"; } },
       { label: "坚持价格", sub: "本月需求 −12%，持续 2 个月", fn: () => { addMod("demand", 0.88, 2, "客流被分流"); return "你咬住了价格。客流被抢走一部分，未来两个月都要难受。"; } },
       { label: "加码营销", sub: "付 ¥6,000，本月需求 +14%", fn: () => { payExtra(6000); addMod("demand", 1.14, 1, "营销反击"); return "你打了轮营销战。这个月客流回来了，钱也花出去了。"; } }
@@ -825,7 +911,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
       { label: "接受", sub: "月租 +500（永久）", fn: () => { S.rentAdd += 500; return "你答应得痛快。固定成本每月多 500，盈亏平衡点又往上抬了一格。"; } },
       { label: "跟他谈", sub: "50% 只涨 250，50% 涨 900", fn: () => Math.random() < 0.5 ? (S.rentAdd += 250, "谈下来一点，只涨 250。") : (S.rentAdd += 900, "房东不吃这套，反手涨了 900。") }
     ]},
-    { id: "audit", who: "guan", title: "合规抽检", desc: "例行检查，查出两项要整改的小问题，监管员问你打算怎么办。", opts: [
+    { id: "audit", who: "zhen", title: "合规抽检", desc: "阿珍急匆匆推门进来：监管来查了，两项要整改的小问题，问咱们怎么办。", opts: [
       { label: "立即整改", sub: "付 ¥4,000", fn: () => { payExtra(4000); return "你当场拍板整改。钱花了，风险归零。"; } },
       { label: "先拖着", sub: "50% 无事，50% 罚款 ¥15,000 且口碑 −12", fn: () => Math.random() < 0.5 ? "这次没被追究。你省了 4,000 —— 但风险还挂在那儿。" : (payExtra(15000), S.rep -= 12, "复查被抓，罚了 15,000，口碑还掉了 12。") }
     ]}
@@ -1059,12 +1145,18 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
     S = newState();
     busy = false; cardNode = null; chartSeq = 0;
     renderHud();
+    setShop(0, false);
     await sleep(160);
     divider("第 1 月 · 开局");
     await typing("zhen", 450);
     push("zhen", "老板，我是阿珍，店里的日常我来盯。这是咱们第一家店 —— 三档货、一台收银机，账上 <b>" +
       money(S.cash) + "</b>，仓库里压着 " + invUnits() + " 件存货。");
-    await sleep(620);
+    await sleep(560);
+    push("zhen",
+      '<img class="scene" src="assets/shop0.webp" alt="门店 LV.0">' +
+      '<div class="ev-r">这就是咱们的店门口 —— 一道卷帘门、一个木架子、一盏灯。往后每个月它长什么样，看你怎么经营。</div>',
+      { wide: true });
+    await sleep(700);
     await typing("zhou", 500);
     push("zhou", "我是老周，负责每个月末给你泼冷水。先说清楚：这里没有「随便点点就赢」。定价、备货、产能、现金，四个变量互相咬着，动一个，另外三个都会响。我只告诉你哪儿出了问题，怎么改，你自己想。");
     await sleep(720);
@@ -1073,6 +1165,10 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid #151
 
   function boot() {
     el("btnLore").addEventListener("click", showLore);
+    el("btnShop").addEventListener("click", showShop);
+    el("stream").addEventListener("click", e => {
+      if (e.target && e.target.classList && e.target.classList.contains("scene")) showShop();
+    });
     restart();
   }
 

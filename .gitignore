@@ -10,4 +10,7 @@ snap.js
 test4.js
 snap2.js
 livetest.js
+live2.js
+testimg.js
 *.bak.html
+assets/*.png
